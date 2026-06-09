@@ -466,6 +466,17 @@ class LMCacheEngine:
                 request_configs=request_configs,
             ):
                 assert isinstance(key, CacheEngineKey)
+                # Eager-init the gpu_connector so kv_layer_groups_manager
+                # is registered on metadata BEFORE the fallback shape is
+                # materialized. Without this, get_shapes() returns the
+                # metadata.kv_shape fallback (single shape with global
+                # head_dim) while the per-group tmp_gpu_buffer built
+                # later in from_gpu uses per-group head_dim, and the
+                # path-2 copy_ explodes on heterogeneous-head-dim models.
+                if hasattr(self.gpu_connector, "initialize_kvcaches_ptr"):
+                    self.gpu_connector.initialize_kvcaches_ptr(**kwargs)
+                if hasattr(self.gpu_connector, "_initialize_kv_cache_pointers"):
+                    self.gpu_connector._initialize_kv_cache_pointers()
                 # Allocate the memory object
                 num_tokens = end - start
                 kv_shapes = self.metadata.get_shapes(num_tokens)

@@ -206,3 +206,18 @@ class LMCacheConnectorV1Dynamic(KVConnectorBase_V1):
             returned by the engine.
         """
         return self._lmcache_engine.request_finished(request, block_ids)
+
+    def request_finished_all_groups(
+        self,
+        request: "Request",
+        block_ids: tuple[list[int], ...],
+    ) -> tuple[bool, Optional[dict[str, Any]]]:
+        """SupportsHMA: per-group finish callback for hybrid KV cache models.
+
+        vLLM's hybrid KV cache scheduler calls this instead of
+        request_finished when the model uses heterogeneous attention
+        groups (e.g. Gemma 4 with mixed head dims).
+        """
+        return self._lmcache_engine.request_finished_all_groups(
+            request, block_ids
+        )
